@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
     use approx::assert_abs_diff_eq;
-    use maths::matrix::Matrix;
-    use maths::matrix_error::MatrixError;
+    use custom_math_stuff::matrix::Matrix;
+    use custom_math_stuff::errors::matrix_error::MatrixError;
 
-    fn setup_matrix(rows: usize, cols: usize, value: f64) -> Matrix {
+    fn setup_matrix(rows: usize, cols: usize, value: f64) -> Matrix<f64> {
         let mut m = Matrix::new(rows, cols);
         m.fill_matrix(value);
         m
@@ -23,7 +23,7 @@ mod tests {
     }
     #[test]
     fn test_new_matrix() {
-        let m = Matrix::new(2, 3);
+        let m: Matrix<f64> = Matrix::new(2, 3);
 
         assert_eq!(m.rows, 2);
         assert_eq!(m.cols, 3);
@@ -60,7 +60,7 @@ mod tests {
         let mut a = setup_matrix(2, 2, 1.0);
         let b = setup_matrix(2, 2, 2.0);
 
-        let res = a.add_matrix(b);
+        let res = a.add_matrix(&b);
 
         assert!(res.is_ok());
         assert_eq!(a.matrix, vec![3.0, 3.0, 3.0, 3.0]);
@@ -68,10 +68,10 @@ mod tests {
 
     #[test]
     fn test_add_matrix_dimension_error() {
-        let mut a = Matrix::new(2, 2);
+        let mut a:Matrix<f64> = Matrix::new(2, 2);
         let b = Matrix::new(3, 3);
 
-        let res = a.add_matrix(b);
+        let res = a.add_matrix(&b);
 
         assert!(matches!(res, Err(MatrixError::DimensionMismatch)));
     }
@@ -81,7 +81,7 @@ mod tests {
         let mut a = setup_matrix(2, 2, 5.0);
         let b = setup_matrix(2, 2, 2.0);
 
-        let res = a.sub_matrix(b);
+        let res = a.sub_matrix(&b);
 
         assert!(res.is_ok());
         assert_eq!(a.matrix, vec![3.0, 3.0, 3.0, 3.0]);
@@ -89,10 +89,10 @@ mod tests {
 
     #[test]
     fn test_sub_matrix_dimension_error() {
-        let mut a = Matrix::new(2, 2);
+        let mut a: Matrix<f64> = Matrix::new(2, 2);
         let b = Matrix::new(3, 3);
 
-        let res = a.sub_matrix(b);
+        let res = a.sub_matrix(&b);
 
         assert!(matches!(res, Err(MatrixError::DimensionMismatch)));
     }
@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn test_mul_matrix_dimension_error() {
-        let a = Matrix::new(2, 3);
+        let a: Matrix<f64> = Matrix::new(2, 3);
         let b = Matrix::new(4, 2);
 
         let res = a.mul_matrix(&b);

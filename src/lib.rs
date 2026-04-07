@@ -1,2 +1,3 @@
 pub mod matrix;
-pub mod matrix_error;
+pub mod vector;
+pub mod errors;

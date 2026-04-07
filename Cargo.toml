@@ -1,9 +1,10 @@
 [package]
-name = "customMathStuff"
+name = "custom_math_stuff"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+num = "0.4.3"
 
 [dev-dependencies]
 approx = "0.6.0-rc2"
