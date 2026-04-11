@@ -1,5 +1,7 @@
+use crate::errors::CommonError::CommonError;
+
 #[derive(Debug)]
 pub enum VectorError {
-    DimensionMismatch,
+    CommonError(CommonError),
     LenIsZero
 }

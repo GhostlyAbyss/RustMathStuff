@@ -1,6 +1,8 @@
+use crate::errors::CommonError::CommonError;
+
 #[derive(Debug)]
 pub enum MatrixError{
-    DimensionMismatch,
+    CommonError(CommonError),
     NotSquaredMatrix,
     NotInverseable
 }

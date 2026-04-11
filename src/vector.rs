@@ -1,6 +1,7 @@
 use num::{pow, Num, Signed};
+use crate::errors::CommonError::CommonError::DimensionMismatch;
 use crate::errors::vector_error::*;
-use crate::errors::vector_error::VectorError::{DimensionMismatch, LenIsZero};
+use crate::errors::vector_error::VectorError::{CommonError, LenIsZero};
 
 #[derive(Clone)]
 struct Vector<T: Num + Copy + Signed> {
@@ -8,11 +9,11 @@ struct Vector<T: Num + Copy + Signed> {
 }
 
 impl<T: Num + Copy + Signed> Vector<T> {
-    fn new(data: Vec<T>) -> Self {
+    pub fn new(data: Vec<T>) -> Self {
         Vector { data }
     }
 
-    fn new_from_points(p1: &[T], p2: &[T]) -> Self {
+    pub fn new_from_points(p1: &[T], p2: &[T]) -> Self {
         let data = p1.iter()
             .zip(p2.iter())
             .map(|(a, b)| *b - *a)
@@ -22,9 +23,9 @@ impl<T: Num + Copy + Signed> Vector<T> {
         }
     }
 
-    fn add_mut(&mut self, other: &Vector<T>) -> Result<(), VectorError> {
+    pub fn add_mut(&mut self, other: &Vector<T>) -> Result<(), VectorError> {
         if self.data.len() != other.data.len() {
-            return Err(DimensionMismatch);
+            return Err(CommonError(DimensionMismatch));
         }
 
         for (a, b) in self.data.iter_mut().zip(other.data.iter()) {
@@ -34,15 +35,15 @@ impl<T: Num + Copy + Signed> Vector<T> {
         Ok(())
     }
 
-    fn add(&self, other: &Vector<T>) -> Result<Self, VectorError> {
+    pub fn add(&self, other: &Vector<T>) -> Result<Self, VectorError> {
         let mut result = self.clone();
         result.add_mut(other)?;
         Ok(result)
     }
 
-    fn sub_mut(&mut self, other: &Vector<T>) -> Result<(), VectorError> {
+    pub fn sub_mut(&mut self, other: &Vector<T>) -> Result<(), VectorError> {
         if self.data.len() != other.data.len() {
-            return Err(DimensionMismatch);
+            return Err(CommonError(DimensionMismatch));
         }
 
         for (a, b) in self.data.iter_mut().zip(other.data.iter()) {
@@ -52,39 +53,39 @@ impl<T: Num + Copy + Signed> Vector<T> {
         Ok(())
     }
 
-    fn sub(&self, other: &Vector<T>) -> Result<Self, VectorError> {
+    pub fn sub(&self, other: &Vector<T>) -> Result<Self, VectorError> {
         let mut result = self.clone();
         result.sub_mut(other)?;
         Ok(result)
     }
 
-    fn dot_mut(&mut self, other: &T){
+    pub fn dot_mut(&mut self, other: &T){
         for a in self.data.iter_mut() {
             *a = *a * *other;
         }
     }
 
-    fn dot(&self, other: &T) -> Self {
+    pub fn dot(&self, other: &T) -> Self {
         let mut result = self.clone();
         result.dot_mut(other);
         result
     }
 
-    fn div_const_mut(&mut self, other: &T){
+    pub fn div_const_mut(&mut self, other: &T){
         for a in self.data.iter_mut() {
             *a = *a / *other
         }
     }
 
-    fn div_const(&self, other: &T) -> Self{
+    pub fn div_const(&self, other: &T) -> Self{
         let mut res = self.clone();
         res.div_const_mut(other);
         res
     }
 
-    fn scalar(&self, other: &Vector<T>) -> Result<T, VectorError>{
+    pub fn scalar(&self, other: &Vector<T>) -> Result<T, VectorError>{
         if self.data.len() != other.data.len() {
-            return Err(DimensionMismatch);
+            return Err(CommonError(DimensionMismatch));
         }
 
         let mut sum = T::zero();
@@ -96,7 +97,7 @@ impl<T: Num + Copy + Signed> Vector<T> {
         Ok(sum)
     }
 
-    fn magnitude(&self) -> T{
+    pub fn magnitude(&self) -> T{
         let mut sum = T::zero();
 
         for x in &self.data {
@@ -106,7 +107,7 @@ impl<T: Num + Copy + Signed> Vector<T> {
         pow(sum, 1/2)
     }
 
-    fn angle_between(&self, other: &Vector<T>) -> Result<T, VectorError>{
+    pub fn angle_between(&self, other: &Vector<T>) -> Result<T, VectorError>{
         if (self.magnitude() == T::zero() || other.magnitude() == T::zero()) {
             return Err(LenIsZero)
         }
@@ -117,22 +118,22 @@ impl<T: Num + Copy + Signed> Vector<T> {
         Ok(dividend? / (self.magnitude() * other.magnitude()))
     }
 
-    fn unit_vector(&self) -> Result<Vector<T>, VectorError>{
+    pub fn unit_vector(&self) -> Result<Vector<T>, VectorError>{
         if self.magnitude() == T::zero(){
             return Err(LenIsZero)
         }
         Ok(self.div_const(&self.magnitude()))
     }
 
-    fn check_dim(&self, expected: usize) -> Result<(), VectorError> {
+    pub fn check_dim(&self, expected: usize) -> Result<(), VectorError> {
         if self.data.len() != expected {
-            Err(DimensionMismatch)
+            Err(CommonError(DimensionMismatch))
         } else {
             Ok(())
         }
     }
 
-    fn cross_mut(&mut self, other: &Vector<T>) -> Result<(), VectorError> {
+    pub fn cross_mut(&mut self, other: &Vector<T>) -> Result<(), VectorError> {
         self.check_dim(3)?;
         other.check_dim(3)?;
 
@@ -147,7 +148,7 @@ impl<T: Num + Copy + Signed> Vector<T> {
         Ok(())
     }
 
-    fn cross(&self, other: &Vector<T>) -> Result<Self, VectorError>{
+    pub fn cross(&self, other: &Vector<T>) -> Result<Self, VectorError>{
         let mut res = self.clone();
         res.cross_mut(other)?;
         Ok(res)

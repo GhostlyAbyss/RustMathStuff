@@ -2,6 +2,7 @@
 mod tests {
     use approx::assert_abs_diff_eq;
     use custom_math_stuff::matrix::Matrix;
+    use custom_math_stuff::errors::CommonError::CommonError::DimensionMismatch;
     use custom_math_stuff::errors::matrix_error::MatrixError;
 
     fn setup_matrix(rows: usize, cols: usize, value: f64) -> Matrix<f64> {
@@ -19,7 +20,7 @@ mod tests {
     #[test]
     fn test_new_from_vec_fails() {
         let m = Matrix::from_vec(2, 3, vec![1f64, 2f64, 3f64, 4f64, 5f64]);
-        assert!(matches!(m, Err(MatrixError::DimensionMismatch)))
+        assert!(matches!(m, Err(MatrixError::CommonError(DimensionMismatch))))
     }
     #[test]
     fn test_new_matrix() {
@@ -73,7 +74,7 @@ mod tests {
 
         let res = a.add_matrix(&b);
 
-        assert!(matches!(res, Err(MatrixError::DimensionMismatch)));
+        assert!(matches!(res, Err(MatrixError::CommonError(DimensionMismatch))));
     }
 
     #[test]
@@ -94,7 +95,7 @@ mod tests {
 
         let res = a.sub_matrix(&b);
 
-        assert!(matches!(res, Err(MatrixError::DimensionMismatch)));
+        assert!(matches!(res, Err(MatrixError::CommonError(DimensionMismatch))));
     }
 
     #[test]
@@ -126,7 +127,7 @@ mod tests {
 
         let res = a.mul_matrix(&b);
 
-        assert!(matches!(res, Err(MatrixError::DimensionMismatch)));
+        assert!(matches!(res, Err(MatrixError::CommonError(DimensionMismatch))));
     }
 
     #[test]

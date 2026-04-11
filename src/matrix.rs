@@ -1,4 +1,5 @@
 use num::{Num, Signed};
+use crate::errors::CommonError::CommonError::DimensionMismatch;
 use crate::errors::matrix_error::MatrixError;
 
 #[derive(Clone)]
@@ -17,7 +18,7 @@ impl<T: Num + Copy + Signed> Matrix<T>{
 
     pub fn from_vec(rows: usize, cols: usize, data: Vec<T>) -> Result<Self, MatrixError> {
         if data.len() != rows * cols {
-            return Err(MatrixError::DimensionMismatch);
+            return Err(MatrixError::CommonError(DimensionMismatch));
         }
 
         Ok(Self {
@@ -134,7 +135,7 @@ impl<T: Num + Copy + Signed> Matrix<T>{
 
     pub fn sub_matrix(&mut self, other: &Matrix<T>) -> Result<(), MatrixError>{
         if other.rows != self.rows || other.cols != self.cols {
-            return Err(MatrixError::DimensionMismatch);
+            return Err(MatrixError::CommonError(DimensionMismatch));
         }
 
         for x in 0..self.matrix.len(){
@@ -172,7 +173,7 @@ impl<T: Num + Copy + Signed> Matrix<T>{
 
     pub fn mul_matrix(&self, other: &Matrix<T>) -> Result<Matrix<T>, MatrixError> {
         if self.cols != other.rows {
-            return Err(MatrixError::DimensionMismatch)
+            return Err(MatrixError::CommonError(DimensionMismatch));
         }
 
         let mut res: Vec<T> = vec![T::zero(); self.rows * other.cols];
@@ -200,7 +201,7 @@ impl<T: Num + Copy + Signed> Matrix<T>{
     pub fn add_matrix(&mut self, other: &Matrix<T>) -> Result<(), MatrixError> {
 
         if other.rows != self.rows || other.cols != self.cols {
-            return Err(MatrixError::DimensionMismatch);
+            return Err(MatrixError::CommonError(DimensionMismatch));
         }
 
         for x in 0.. self.matrix.len() {
