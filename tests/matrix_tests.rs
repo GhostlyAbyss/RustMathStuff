@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
     use approx::assert_abs_diff_eq;
-    use custom_math_stuff::matrix::Matrix;
-    use custom_math_stuff::errors::CommonError::CommonError::DimensionMismatch;
-    use custom_math_stuff::errors::matrix_error::MatrixError;
+    use custom_math_ml_stuff::matrix::Matrix;
+    use custom_math_ml_stuff::errors::CommonError::CommonError::DimensionMismatch;
+    use custom_math_ml_stuff::errors::matrix_error::MatrixError;
 
     fn setup_matrix(rows: usize, cols: usize, value: f64) -> Matrix<f64> {
         let mut m = Matrix::new(rows, cols);

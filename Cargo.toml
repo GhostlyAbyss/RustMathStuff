@@ -1,5 +1,5 @@
 [package]
-name = "custom_math_stuff"
+name = "custom_math_ml_stuff"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,6 +7,11 @@ edition = "2024"
 num = "0.4.3"
 num_cpus = "1.17.0"
 rayon = "1.11.0"
+polars = { version = "0.53.0", default-features = false, features = [
+    "fmt",
+    "csv",
+] }
+rand = "0.10.1"
 
 [dev-dependencies]
 approx = "0.6.0-rc2"

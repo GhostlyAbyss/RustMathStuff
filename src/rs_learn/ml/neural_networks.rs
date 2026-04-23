@@ -1,5 +1,5 @@
 use num::{Num, Signed};
-use crate::ml::activation::Activation;
+use crate::rs_learn::ml::activation::Activation;
 use crate::matrix::Matrix;
 
 struct Network<T: Num + Copy + Signed>{
