@@ -1,5 +1,5 @@
 use num::{Num, Signed};
-use crate::errors::CommonError::CommonError::DimensionMismatch;
+use crate::errors::common_error::CommonError::DimensionMismatch;
 use crate::errors::matrix_error::MatrixError;
 
 #[derive(Clone)]
@@ -146,21 +146,19 @@ impl<T: Num + Copy + Signed> Matrix<T>{
     }
 
     pub fn transposed_matrix(&mut self) -> Matrix<T>{
-        let mut field = vec![T::zero(); self.cols * self.rows];
-        let mut field_count = 0;
-        for i in 0..self.cols{
-            for j in (i..self.rows).step_by(3){
-                field[field_count] = self.matrix[j];
-                field_count+=1;
+        let mut res = vec![T::zero(); self.rows * self.cols];
+
+        for i in 0..self.rows {
+            for j in 0..self.cols {
+                res[j * self.rows + i] = self.matrix[i * self.cols + j];
             }
         }
 
-        Matrix{
-            matrix: field,
+        Matrix {
+            matrix: res,
             rows: self.cols,
-            cols: self.rows
+            cols: self.rows,
         }
-
     }
 
     pub fn sum_matrix(&self) -> T{

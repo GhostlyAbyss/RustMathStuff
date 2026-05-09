@@ -1,5 +1,5 @@
 use std::fmt;
-use crate::errors::CommonError::CommonError;
+use crate::errors::common_error::CommonError;
 
 #[derive(Debug)]
 pub enum VectorError {

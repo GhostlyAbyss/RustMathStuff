@@ -1,145 +1,125 @@
+use crate::errors::common_error::CommonError;
+use crate::matrix::Matrix;
+use num::{Float, Signed};
 use rayon::prelude::*;
-use num::Float;
-use crate::errors::CommonError::CommonError;
 
-pub struct LinearRegression<T: Float + Copy + Send + Sync>{
-    coef_: T,
+pub struct LinearRegression<T: Float + Copy + Send + Sync + Signed> {
+    coef_: Vec<T>,
     interceptor_: T,
     n_jobs: isize,
 }
 
-impl<T: Float + Copy + Send + Sync> LinearRegression<T>{
-
-    pub fn new(n_jobs: Option<isize>) -> Self {
-        let jobs = match n_jobs {
-            Some(-1) => num_cpus::get() as isize,
-            Some(n) if n > 0 => n,
-            _ => 1,
-        };
-
+impl<T: Float + Copy + Send + Sync + Signed> Default for LinearRegression<T> {
+    fn default() -> Self {
         Self {
-            coef_: T::zero(),
+            coef_: Vec::new(),
             interceptor_: T::zero(),
-            n_jobs: jobs,
+            n_jobs: 1,
         }
     }
+}
 
-    pub fn fit(&mut self, X: Vec<T>, y: Vec<T>) -> Result<(), CommonError>{
-        if self.n_jobs > 1 {
-            rayon::ThreadPoolBuilder::new()
-                .num_threads(self.n_jobs as usize)
-                .build_global()
-                .ok();
-        }
+impl<T: Float + Copy + Send + Sync + Signed> LinearRegression<T> {
+    pub fn new() -> Self {
+        Self::default()
+    }
 
-        if (X.len() != y.len()){
+    pub fn n_jobs(mut self, n_jobs: isize) -> Self {
+        self.n_jobs = match n_jobs {
+            -1 => num_cpus::get() as isize,
+            n if n > 0 => n,
+            _ => 1,
+        };
+        self
+    }
+
+    pub fn fit(&mut self, x: &Matrix<T>, y: &Vec<T>) -> Result<(), CommonError> {
+        let n = x.rows;
+        let d = x.cols;
+
+        if y.len() != n {
             return Err(CommonError::DimensionMismatch);
         }
-        let x_mean = self.mean(&X);
-        let y_mean = self.mean(&y);
 
-        let numerator: T = if self.n_jobs > 1 {
-            X.par_iter()
-                .zip(y.par_iter())
-                .map(|(x, y)| (*x - x_mean) * (*y - y_mean))
-                .reduce(|| T::zero(), |a, b| a + b)
-        } else {
-            X.iter()
-                .zip(y.iter())
-                .map(|(x, y)| (*x - x_mean) * (*y - y_mean))
-                .fold(T::zero(), |a, b| a + b)
-        };
+        let mut x_bias = Matrix::new(n, d + 1);
 
-        let denominator: T = if self.n_jobs > 1 {
-            X.par_iter()
-                .map(|x| (*x - x_mean).powi(2))
-                .reduce(|| T::zero(), |a, b| a + b)
-        } else {
-            X.iter()
-                .map(|x| (*x - x_mean).powi(2))
-                .fold(T::zero(), |a, b| a + b)
-        };
+        for i in 0..n {
+            for j in 0..d {
+                x_bias.matrix[i * (d + 1) + j] = x.matrix[i * d + j];
+            }
+            x_bias.matrix[i * (d + 1) + d] = T::one();
+        }
 
-        self.coef_ = numerator / denominator;
-        self.interceptor_ = y_mean - self.coef_ * x_mean;
+        let xt = x_bias.transposed_matrix();
+        let xtx = xt.mul_matrix(&x_bias).unwrap();
+
+        let y_mat = Matrix::from_vec(n, 1, y.clone()).unwrap();
+        let xty = xt.mul_matrix(&y_mat).unwrap();
+
+        let xtx_inv = xtx.inverse_matrix().unwrap();
+        let w = xtx_inv.mul_matrix(&xty).unwrap();
+
+        self.coef_ = w.matrix[..d].to_vec();
+        self.interceptor_ = w.matrix[d];
 
         Ok(())
     }
 
-    pub fn predict(&self, x: T) -> T{
-        self.coef_ * x + self.interceptor_
+    pub fn predict(&self, x: &[T]) -> T {
+        let mut sum = self.interceptor_;
+
+        for (w, xi) in self.coef_.iter().zip(x.iter()) {
+            sum = sum + (*w * *xi);
+        }
+
+        sum
     }
 
-    pub fn predict_multiple(&self, x: Vec<T>) -> Vec<T>{
+    pub fn predict_multiple(&self, x: &Vec<Vec<T>>) -> Vec<T> {
         let mut res = vec![T::zero(); x.len()];
 
         if self.n_jobs > 1 {
-            res.par_iter_mut()
-                .zip(x.par_iter())
-                .for_each(|(r, xi)| {
-                    *r = self.coef_ * *xi + self.interceptor_;
-                });
+            res.par_iter_mut().zip(x.par_iter()).for_each(|(r, x)| {
+                *r = self.predict(x);
+            });
         } else {
-            for i in 0..x.len() {
-                res[i] = self.coef_ * x[i] + self.interceptor_;
+            for (i, x) in x.iter().enumerate() {
+                res[i] = self.predict(x);
             }
         }
 
         res
     }
 
-    fn mean(&self, data: &Vec<T>) -> T{
-        let mut sum = T::zero();
-
-        for x in data.iter() {
-            sum = sum + *x;
-        }
-
-        sum / T::from(data.iter().len()).unwrap()
+    fn mean(&self, data: &Vec<T>) -> T {
+        let sum: T = data.iter().copied().fold(T::zero(), |a, b| a + b);
+        sum / T::from(data.len()).unwrap()
     }
 
-    pub fn score(&self, X: Vec<T>, y: Vec<T>) -> Result<f32, CommonError> {
 
-        if X.len() != y.len() {
+    pub fn score(&self, x: &Matrix<T>, y: &Vec<T>) -> Result<f32, CommonError> {
+        if x.rows != y.len() {
             return Err(CommonError::DimensionMismatch);
         }
 
-        let y_mean = self.mean(&y);
+        let y_mean = self.mean(y);
 
-        let (ss_res, ss_tot) = if self.n_jobs > 1 {
+        let mut ss_res = T::zero();
+        let mut ss_tot = T::zero();
 
-            use rayon::prelude::*;
+        for i in 0..x.rows {
+            let mut x_row_sum = self.interceptor_;
 
-            X.par_iter()
-                .zip(y.par_iter())
-                .map(|(x, y)| {
-                    let y_pred = self.predict(*x);
-
-                    let res = (*y - y_pred).powi(2);
-                    let tot = (*y - y_mean).powi(2);
-
-                    (res, tot)
-                })
-                .reduce(
-                    || (T::zero(), T::zero()),
-                    |a, b| (a.0 + b.0, a.1 + b.1),
-                )
-
-        } else {
-
-            let mut ss_res = T::zero();
-            let mut ss_tot = T::zero();
-
-            for (x, y) in X.iter().zip(y.iter()) {
-
-                let y_pred = self.predict(*x);
-
-                ss_res = ss_res + (*y - y_pred).powi(2);
-                ss_tot = ss_tot + (*y - y_mean).powi(2);
+            for j in 0..x.cols {
+                x_row_sum = x_row_sum + self.coef_[j] * x.matrix[i * x.cols + j];
             }
 
-            (ss_res, ss_tot)
-        };
+            let y_pred = x_row_sum;
+            let y_true = y[i];
+
+            ss_res = ss_res + (y_true - y_pred).powi(2);
+            ss_tot = ss_tot + (y_true - y_mean).powi(2);
+        }
 
         let r2 = T::one() - ss_res / ss_tot;
 

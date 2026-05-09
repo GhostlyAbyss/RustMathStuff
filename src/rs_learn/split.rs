@@ -6,17 +6,43 @@ use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 
 use crate::errors::split_error::SplitError;
 
-pub struct Split;
+pub struct Split{
+    test_size: Option<f32>,
+    train_size: Option<f32>,
+    random_state: u64,
+    stratify: Option<Series>,
+    shuffle: bool,
+}
 
 impl Split {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn test_size(mut self, size: f32) -> Self {
+        self.test_size = Some(size);
+        self
+    }
+
+    pub fn random_state(mut self, seed: u64) -> Self {
+        self.random_state = seed;
+        self
+    }
+
+    pub fn shuffle(mut self, shuffle: bool) -> Self {
+        self.shuffle = shuffle;
+        self
+    }
+
+    pub fn stratify(mut self, stratify: Series) -> Self {
+        self.stratify = Some(stratify);
+        self
+    }
+
     pub fn train_test_split(
+        &self,
         x: &DataFrame,
-        y: &Column,
-        test_size: Option<f32>,
-        train_size: Option<f32>,
-        random_state: Option<u64>,
-        stratify: Option<&Series>,
-        shuffle: Option<bool>,
+        y: &Column
     ) -> Result<(DataFrame, DataFrame, Column, Column), SplitError> {
         let n = x.height();
 
@@ -24,13 +50,13 @@ impl Split {
             return Err(invalid_input("X and y must have the same number of rows"));
         }
 
-        if let Some(s) = stratify {
+        if let Some(s) = &self.stratify {
             if s.len() != n {
                 return Err(invalid_input("stratify must have the same number of rows as X"));
             }
         }
 
-        let (test_size, train_size) = match (test_size, train_size) {
+        let (test_size, train_size) = match (self.test_size, self.train_size) {
             (Some(test), Some(train)) => (test, train),
             (Some(test), None) => (test, 1.0 - test),
             (None, Some(train)) => (1.0 - train, train),
@@ -41,14 +67,14 @@ impl Split {
             return Err(invalid_input("test_size and train_size must be between 0.0 and 1.0"));
         }
 
-        let seed = random_state.unwrap_or(42);
-        let shuffle = shuffle.unwrap_or(true);
+        let seed = self.random_state;
+        let shuffle = self.shuffle;
 
         let test_n = ((n as f32) * test_size).round() as usize;
         let test_n = test_n.min(n);
         let train_n = n - test_n;
 
-        let (train_idx, test_idx) = match stratify {
+        let (train_idx, test_idx) = match &self.stratify {
             Some(labels) => {
                 if !shuffle {
                     return Err(invalid_input("stratify requires shuffle = true"));
@@ -166,6 +192,19 @@ impl Split {
         Ok((train, test))
     }
 }
+
+impl Default for Split {
+    fn default() -> Self {
+        Self {
+            test_size: None,
+            train_size: None,
+            random_state: 42,
+            stratify: None,
+            shuffle: true,
+        }
+    }
+}
+
 fn invalid_input(msg: impl Into<String>) -> SplitError {
     SplitError::InvalidInput(msg.into())
 }

@@ -1,5 +1,5 @@
 use num::{pow, Num, Signed};
-use crate::errors::CommonError::CommonError::DimensionMismatch;
+use crate::errors::common_error::CommonError::DimensionMismatch;
 use crate::errors::vector_error::*;
 use crate::errors::vector_error::VectorError::{CommonError, LenIsZero};
 
@@ -108,11 +108,11 @@ impl<T: Num + Copy + Signed> Vector<T> {
     }
 
     pub fn angle_between(&self, other: &Vector<T>) -> Result<T, VectorError>{
-        if (self.magnitude() == T::zero() || other.magnitude() == T::zero()) {
+        if self.magnitude() == T::zero() || other.magnitude() == T::zero() {
             return Err(LenIsZero)
         }
         let dividend = self.scalar(other);
-        if (dividend.is_err()){
+        if dividend.is_err() {
             return Err(dividend.err().unwrap())
         }
         Ok(dividend? / (self.magnitude() * other.magnitude()))
